@@ -14,11 +14,50 @@ type DoubanHot struct {
 	r *req.Client
 }
 
+var doubanSupportedCategories = []VideoCategory{
+	VideoCategoryMovie,
+}
+
 // NewDoubanHot 创建豆瓣热门词抓取器。
 func NewDoubanHot() *DoubanHot {
 	r := req.NewClient().SetTimeout(time.Second * 10).
 		SetUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3")
 	return &DoubanHot{r: r}
+}
+
+// SupportedCategories 返回豆瓣热词当前支持的类目。
+func (d *DoubanHot) SupportedCategories() []VideoCategory {
+	return copyVideoCategories(doubanSupportedCategories)
+}
+
+// HotByCategory 按类目返回豆瓣热词。
+func (d *DoubanHot) HotByCategory(category VideoCategory) ([]string, error) {
+	normalized, ok := normalizeVideoCategory(category)
+	if !ok || !supportsVideoCategory(doubanSupportedCategories, normalized) {
+		return nil, unsupportedCategoryError("douban hot", category)
+	}
+
+	return d.Televisions()
+}
+
+// Movies 返回豆瓣电影热词。
+func (d *DoubanHot) Movies() ([]string, error) {
+	return d.HotByCategory(VideoCategoryMovie)
+}
+
+// Teleplays 返回豆瓣电视剧热词。
+func (d *DoubanHot) Teleplays() ([]string, error) {
+	return d.HotByCategory(VideoCategoryTeleplay)
+}
+
+// VarietyShows 返回豆瓣综艺热词。
+func (d *DoubanHot) VarietyShows() ([]string, error) {
+	return d.HotByCategory(VideoCategoryVariety)
+}
+
+// Animations 返回豆瓣动漫热词。
+func (d *DoubanHot) Animations() ([]string, error) {
+	return d.HotByCategory(VideoCategoryAnimation)
 }
 
 // Televisions 返回豆瓣电影首页可见的热门影视词。

@@ -26,6 +26,13 @@ type iQiyiHotResponse struct {
 	} `json:"hotQuery"`
 }
 
+var iqiyiHotSupportedCategories = []VideoCategory{
+	VideoCategoryMovie,
+	VideoCategoryTeleplay,
+	VideoCategoryVariety,
+	VideoCategoryAnimation,
+}
+
 var iqiyiSupportedCategories = map[string]struct{}{
 	"电影":  {},
 	"电视剧": {},
@@ -41,8 +48,67 @@ func NewIQiyiHot() *IQiyiHot {
 	return &IQiyiHot{r: r}
 }
 
+// SupportedCategories 返回爱奇艺热词当前支持的类目。
+func (i *IQiyiHot) SupportedCategories() []VideoCategory {
+	return copyVideoCategories(iqiyiHotSupportedCategories)
+}
+
+// HotByCategory 按类目返回爱奇艺热词。
+func (i *IQiyiHot) HotByCategory(category VideoCategory) ([]string, error) {
+	normalized, ok := normalizeVideoCategory(category)
+	if !ok || !supportsVideoCategory(iqiyiHotSupportedCategories, normalized) {
+		return nil, unsupportedCategoryError("iqiyi hot", category)
+	}
+
+	respModel, err := i.fetchHotResponse()
+	if err != nil {
+		return nil, err
+	}
+
+	words := i.findWordsByGroup(respModel, string(normalized))
+	if len(words) == 0 {
+		return nil, errors.New("iqiyi hot fail")
+	}
+
+	return words, nil
+}
+
+// Movies 返回爱奇艺电影热词。
+func (i *IQiyiHot) Movies() ([]string, error) {
+	return i.HotByCategory(VideoCategoryMovie)
+}
+
+// Teleplays 返回爱奇艺电视剧热词。
+func (i *IQiyiHot) Teleplays() ([]string, error) {
+	return i.HotByCategory(VideoCategoryTeleplay)
+}
+
+// VarietyShows 返回爱奇艺综艺热词。
+func (i *IQiyiHot) VarietyShows() ([]string, error) {
+	return i.HotByCategory(VideoCategoryVariety)
+}
+
+// Animations 返回爱奇艺动漫热词。
+func (i *IQiyiHot) Animations() ([]string, error) {
+	return i.HotByCategory(VideoCategoryAnimation)
+}
+
 // Televisions 返回爱奇艺热门搜索词。
 func (i *IQiyiHot) Televisions() ([]string, error) {
+	respModel, err := i.fetchHotResponse()
+	if err != nil {
+		return nil, err
+	}
+
+	words := i.findWords(respModel)
+	if len(words) == 0 {
+		return nil, errors.New("iqiyi hot fail")
+	}
+
+	return words, nil
+}
+
+func (i *IQiyiHot) fetchHotResponse() (*iQiyiHotResponse, error) {
 	var respModel iQiyiHotResponse
 	resp, err := i.r.R().SetSuccessResult(&respModel).SetQueryParam("v", "17.041.24982").Get("https://mesh.if.iqiyi.com/portal/lw/search/keywords/hotList")
 	if err != nil {
@@ -53,12 +119,7 @@ func (i *IQiyiHot) Televisions() ([]string, error) {
 		return nil, errors.New("iqiyi hot fail")
 	}
 
-	words := i.findWords(&respModel)
-	if len(words) == 0 {
-		return nil, errors.New("iqiyi hot fail")
-	}
-
-	return words, nil
+	return &respModel, nil
 }
 
 func (i *IQiyiHot) findWords(respModel *iQiyiHotResponse) []string {
@@ -109,6 +170,36 @@ func (i *IQiyiHot) findWords(respModel *iQiyiHotResponse) []string {
 	}
 
 	return hotTitles
+}
+
+func (i *IQiyiHot) findWordsByGroup(respModel *iQiyiHotResponse, groupTitle string) []string {
+	words := make([]string, 0, 20)
+	seen := make(map[string]struct{})
+
+	for _, group := range respModel.HotQuery {
+		if strings.TrimSpace(group.Title) != groupTitle {
+			continue
+		}
+
+		for _, item := range group.Items {
+			if item.QipuID <= 0 {
+				continue
+			}
+
+			title := removeChars(strings.TrimSpace(item.Title))
+			if title == "" {
+				continue
+			}
+			if _, ok := seen[title]; ok {
+				continue
+			}
+
+			seen[title] = struct{}{}
+			words = append(words, title)
+		}
+	}
+
+	return words
 }
 
 func (i *IQiyiHot) categoryOf(tag string) string {

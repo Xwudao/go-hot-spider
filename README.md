@@ -26,6 +26,14 @@ go get github.com/Xwudao/go-hot-spider
 
 Each scraper exposes a `Televisions() ([]string, error)` method that returns a deduplicated list of hot keyword strings. `BaiduSuggestion` instead exposes `GetSuggestion(wd string) ([]string, error)`.
 
+Category-capable scrapers now also expose:
+
+- `SupportedCategories() []VideoCategory`
+- `HotByCategory(category VideoCategory) ([]string, error)`
+- Convenience methods: `Movies()`, `Teleplays()`, `VarietyShows()`, `Animations()`
+
+If the upstream site does not expose stable category data, `HotByCategory` returns `ErrCategoryNotSupported`.
+
 ```go
 package main
 
@@ -50,6 +58,13 @@ func main() {
         panic(err)
     }
     fmt.Println("爱奇艺热搜:", words)
+
+    // 爱奇艺综艺热词
+    varietyWords, err := iq.VarietyShows()
+    if err != nil {
+        panic(err)
+    }
+    fmt.Println("爱奇艺综艺热词:", varietyWords)
 
     // 腾讯视频热搜
     qq := hotspider.NewQQHot()
@@ -107,8 +122,27 @@ func main() {
     for _, item := range movie {
         fmt.Printf("Word: %s, Desc: %s, Image: %s\n", item.Word, item.Desc, item.Image)
     }
+
+    // 按统一类目接口获取夸克电视剧热词
+    qkTeleplays, err := qk.HotByCategory(hotspider.VideoCategoryTeleplay)
+    if err != nil {
+        panic(err)
+    }
+    fmt.Println("夸克电视剧热词:", qkTeleplays)
 }
 ```
+
+## Category Support
+
+| Platform | `SupportedCategories()` |
+|----------|-------------------------|
+| 百度热榜 | `电影`, `电视剧` |
+| 爱奇艺 | `电影`, `电视剧`, `综艺`, `动漫` |
+| 芒果TV | `电影`, `电视剧`, `综艺`, `动漫` |
+| 腾讯视频 | 暂不支持稳定类目接口 |
+| 夸克视频 | `电影`, `电视剧`, `综艺`, `动漫` |
+| 豆瓣 | `电影` |
+| 优酷 | 暂不支持稳定类目接口 |
 
 ## Types
 

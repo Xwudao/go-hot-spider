@@ -29,11 +29,43 @@ type youkuRecommendResponse struct {
 	Ret    []string `json:"ret"`
 }
 
+var youkuSupportedCategories []VideoCategory
+
 // NewYoukuHot 创建优酷热门搜索词抓取器。
 func NewYoukuHot() *YoukuHot {
 	r := req.NewClient().SetTimeout(time.Second*10).ImpersonateChrome().
 		SetCommonHeader("Referer", "https://so.youku.com/search/q_")
 	return &YoukuHot{r: r}
+}
+
+// SupportedCategories 返回优酷当前支持的类目。
+func (y *YoukuHot) SupportedCategories() []VideoCategory {
+	return copyVideoCategories(youkuSupportedCategories)
+}
+
+// HotByCategory 按类目返回优酷热词。
+func (y *YoukuHot) HotByCategory(category VideoCategory) ([]string, error) {
+	return nil, unsupportedCategoryError("youku hot", category)
+}
+
+// Movies 返回优酷电影热词。
+func (y *YoukuHot) Movies() ([]string, error) {
+	return y.HotByCategory(VideoCategoryMovie)
+}
+
+// Teleplays 返回优酷电视剧热词。
+func (y *YoukuHot) Teleplays() ([]string, error) {
+	return y.HotByCategory(VideoCategoryTeleplay)
+}
+
+// VarietyShows 返回优酷综艺热词。
+func (y *YoukuHot) VarietyShows() ([]string, error) {
+	return y.HotByCategory(VideoCategoryVariety)
+}
+
+// Animations 返回优酷动漫热词。
+func (y *YoukuHot) Animations() ([]string, error) {
+	return y.HotByCategory(VideoCategoryAnimation)
 }
 
 // Televisions 返回优酷热门搜索词。

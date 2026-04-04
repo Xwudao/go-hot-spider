@@ -13,6 +13,11 @@ type BaiduHot struct {
 	r *req.Client
 }
 
+var baiduSupportedCategories = []VideoCategory{
+	VideoCategoryMovie,
+	VideoCategoryTeleplay,
+}
+
 // NewBaiduHot 创建百度热榜抓取器。
 func NewBaiduHot() *BaiduHot {
 	var r = req.NewClient().SetTimeout(time.Second * 10).
@@ -31,6 +36,56 @@ func (b *BaiduHot) GetMovie() ([]*HotData, error) {
 // GetTeleplay 获取百度电视剧榜热词。
 func (b *BaiduHot) GetTeleplay() ([]*HotData, error) {
 	return b.GetHotByType("teleplay")
+}
+
+// SupportedCategories 返回百度热榜当前支持的类目。
+func (b *BaiduHot) SupportedCategories() []VideoCategory {
+	return copyVideoCategories(baiduSupportedCategories)
+}
+
+// HotByCategory 按类目返回百度热榜词。
+func (b *BaiduHot) HotByCategory(category VideoCategory) ([]string, error) {
+	normalized, ok := normalizeVideoCategory(category)
+	if !ok || !supportsVideoCategory(baiduSupportedCategories, normalized) {
+		return nil, unsupportedCategoryError("baidu hot", category)
+	}
+
+	switch normalized {
+	case VideoCategoryMovie:
+		items, err := b.GetMovie()
+		if err != nil {
+			return nil, err
+		}
+		return wordsFromHotData(items), nil
+	case VideoCategoryTeleplay:
+		items, err := b.GetTeleplay()
+		if err != nil {
+			return nil, err
+		}
+		return wordsFromHotData(items), nil
+	default:
+		return nil, unsupportedCategoryError("baidu hot", category)
+	}
+}
+
+// Movies 返回百度电影榜热词。
+func (b *BaiduHot) Movies() ([]string, error) {
+	return b.HotByCategory(VideoCategoryMovie)
+}
+
+// Teleplays 返回百度电视剧榜热词。
+func (b *BaiduHot) Teleplays() ([]string, error) {
+	return b.HotByCategory(VideoCategoryTeleplay)
+}
+
+// VarietyShows 返回百度综艺热词。
+func (b *BaiduHot) VarietyShows() ([]string, error) {
+	return b.HotByCategory(VideoCategoryVariety)
+}
+
+// Animations 返回百度动漫热词。
+func (b *BaiduHot) Animations() ([]string, error) {
+	return b.HotByCategory(VideoCategoryAnimation)
 }
 
 // Televisions 返回百度电影榜和电视剧榜的热词。

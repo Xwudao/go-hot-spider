@@ -1,12 +1,21 @@
 package hotspider
 
 import (
+	"errors"
 	"strings"
 	"testing"
 )
 
 type liveWordFetcher interface {
 	Televisions() ([]string, error)
+}
+
+type categoryWordFetcher interface {
+	HotByCategory(category VideoCategory) ([]string, error)
+}
+
+type categorySupportFetcher interface {
+	SupportedCategories() []VideoCategory
 }
 
 func TestLiveTelevisions(t *testing.T) {
@@ -87,6 +96,98 @@ func TestBaiduSuggestionLive(t *testing.T) {
 	}
 
 	assertLiveWords(t, suggestions)
+}
+
+func TestHotByCategoryLive(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip live HTTP tests in short mode")
+	}
+
+	tests := []struct {
+		name     string
+		fetcher  categoryWordFetcher
+		category VideoCategory
+	}{
+		{name: "baidu-movie", fetcher: NewBaiduHot(), category: VideoCategoryMovie},
+		{name: "baidu-teleplay", fetcher: NewBaiduHot(), category: VideoCategoryTeleplay},
+		{name: "iqiyi-movie", fetcher: NewIQiyiHot(), category: VideoCategoryMovie},
+		{name: "iqiyi-teleplay", fetcher: NewIQiyiHot(), category: VideoCategoryTeleplay},
+		{name: "iqiyi-variety", fetcher: NewIQiyiHot(), category: VideoCategoryVariety},
+		{name: "iqiyi-animation", fetcher: NewIQiyiHot(), category: VideoCategoryAnimation},
+		{name: "mgtv-movie", fetcher: NewMGTVHot(), category: VideoCategoryMovie},
+		{name: "mgtv-teleplay", fetcher: NewMGTVHot(), category: VideoCategoryTeleplay},
+		{name: "mgtv-variety", fetcher: NewMGTVHot(), category: VideoCategoryVariety},
+		{name: "mgtv-animation", fetcher: NewMGTVHot(), category: VideoCategoryAnimation},
+		{name: "quark-movie", fetcher: NewQuarkHot(), category: VideoCategoryMovie},
+		{name: "quark-teleplay", fetcher: NewQuarkHot(), category: VideoCategoryTeleplay},
+		{name: "quark-variety", fetcher: NewQuarkHot(), category: VideoCategoryVariety},
+		{name: "quark-animation", fetcher: NewQuarkHot(), category: VideoCategoryAnimation},
+		{name: "douban-movie", fetcher: NewDoubanHot(), category: VideoCategoryMovie},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			words, err := tt.fetcher.HotByCategory(tt.category)
+			if err != nil {
+				t.Fatalf("HotByCategory(%q) error = %v", tt.category, err)
+			}
+
+			assertLiveWords(t, words)
+		})
+	}
+}
+
+func TestHotByCategoryUnsupported(t *testing.T) {
+	tests := []struct {
+		name     string
+		fetcher  categoryWordFetcher
+		category VideoCategory
+	}{
+		{name: "qq-movie", fetcher: NewQQHot(), category: VideoCategoryMovie},
+		{name: "youku-teleplay", fetcher: NewYoukuHot(), category: VideoCategoryTeleplay},
+		{name: "douban-variety", fetcher: NewDoubanHot(), category: VideoCategoryVariety},
+		{name: "baidu-animation", fetcher: NewBaiduHot(), category: VideoCategoryAnimation},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := tt.fetcher.HotByCategory(tt.category)
+			if !errors.Is(err, ErrCategoryNotSupported) {
+				t.Fatalf("expected ErrCategoryNotSupported, got %v", err)
+			}
+		})
+	}
+}
+
+func TestSupportedCategories(t *testing.T) {
+	tests := []struct {
+		name     string
+		fetcher  categorySupportFetcher
+		expected []VideoCategory
+	}{
+		{name: "baidu", fetcher: NewBaiduHot(), expected: []VideoCategory{VideoCategoryMovie, VideoCategoryTeleplay}},
+		{name: "iqiyi", fetcher: NewIQiyiHot(), expected: []VideoCategory{VideoCategoryMovie, VideoCategoryTeleplay, VideoCategoryVariety, VideoCategoryAnimation}},
+		{name: "mgtv", fetcher: NewMGTVHot(), expected: []VideoCategory{VideoCategoryMovie, VideoCategoryTeleplay, VideoCategoryVariety, VideoCategoryAnimation}},
+		{name: "qq", fetcher: NewQQHot(), expected: nil},
+		{name: "quark", fetcher: NewQuarkHot(), expected: []VideoCategory{VideoCategoryMovie, VideoCategoryTeleplay, VideoCategoryVariety, VideoCategoryAnimation}},
+		{name: "douban", fetcher: NewDoubanHot(), expected: []VideoCategory{VideoCategoryMovie}},
+		{name: "youku", fetcher: NewYoukuHot(), expected: nil},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			categories := tt.fetcher.SupportedCategories()
+			if len(categories) != len(tt.expected) {
+				t.Fatalf("SupportedCategories() len = %d, want %d", len(categories), len(tt.expected))
+			}
+
+			for index, category := range tt.expected {
+				if categories[index] != category {
+					t.Fatalf("SupportedCategories()[%d] = %q, want %q", index, categories[index], category)
+				}
+			}
+		})
+	}
 }
 
 func TestQuarkSearchLive(t *testing.T) {
