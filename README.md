@@ -132,6 +132,19 @@ func main() {
 }
 ```
 
+### Export Historical Words
+
+Use the command tool below to append the latest scraped film and TV hot words into `data/movies.txt`. These upstream endpoints do not expose historical pagination, so the command builds a local history file by re-running over time and flushes to disk after each upstream fetch.
+
+```bash
+go run ./cmd/hot-data -delay 2s
+```
+
+Flags:
+
+- `-delay`: delay between upstream requests, defaults to `2s`
+- `-output`: output file path, defaults to `data/movies.txt`
+
 ## Category Support
 
 | Platform | `SupportedCategories()`          |

@@ -32,3 +32,7 @@ Before finishing your response, verify:
 → A follow-up question is included
 
 A response is NOT complete without this step.
+
+## Tools
+
+you can use 'playwright-mcp' to interact with the web pages and fetch the data or analyze the data.
