@@ -1,6 +1,7 @@
 package hotspider
 
 import (
+	"errors"
 	"strings"
 	"time"
 
@@ -33,11 +34,22 @@ func (b *QuarkSearch) Search(q string) (string, error) {
 		return "", err
 	}
 
-	doc, err := goquery.NewDocumentFromReader(strings.NewReader(resp.String()))
+	body := resp.String()
+	if strings.Contains(body, `"action":"captcha"`) || strings.Contains(body, "_____tmd_____") {
+		return "", errors.New("quark search blocked by captcha")
+	}
+
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(body))
 	if err != nil {
 		return "", err
 	}
 
-	text := doc.Find("#main").Text()
-	return text, nil
+	for _, selector := range []string{"#main", "main", "body"} {
+		text := strings.TrimSpace(doc.Find(selector).First().Text())
+		if text != "" {
+			return text, nil
+		}
+	}
+
+	return "", errors.New("quark search result is empty")
 }
