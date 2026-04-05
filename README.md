@@ -10,18 +10,18 @@ go get github.com/Xwudao/go-hot-spider
 
 ## Supported Platforms
 
-| Platform     | Struct            | Description                         |
-| ------------ | ----------------- | ----------------------------------- |
-| 百度热榜     | `BaiduHot`        | 电影 / 电视剧热榜词                 |
-| 百度搜索建议 | `BaiduSuggestion` | 搜索词联想建议                      |
-| 爱奇艺       | `IQiyiHot`        | 热门搜索词（电影/电视剧/综艺/动漫） |
-| 芒果TV       | `MGTVHot`         | 热门搜索词                          |
-| 腾讯视频     | `QQHot`           | 热门搜索词                          |
-| 夸克视频     | `QuarkHot`        | 影视排行榜热词                      |
-| 夸克搜索     | `QuarkSearch`     | 网盘搜索结果文本                    |
-| 豆瓣         | `DoubanHot`       | 电影首页热门影视词                  |
-| 优酷         | `YoukuHot`        | 热门搜索词                          |
-| 红果短剧     | `NovelQuickAppHot` | 首页热门短剧词                    |
+| Platform     | Struct             | Description                         |
+| ------------ | ------------------ | ----------------------------------- |
+| 百度热榜     | `BaiduHot`         | 电影 / 电视剧热榜词                 |
+| 百度搜索建议 | `BaiduSuggestion`  | 搜索词联想建议                      |
+| 爱奇艺       | `IQiyiHot`         | 热门搜索词（电影/电视剧/综艺/动漫） |
+| 芒果TV       | `MGTVHot`          | 热门搜索词                          |
+| 腾讯视频     | `QQHot`            | 热门搜索词                          |
+| 夸克视频     | `QuarkHot`         | 影视排行榜热词                      |
+| 夸克搜索     | `QuarkSearch`      | 网盘搜索结果文本                    |
+| 豆瓣         | `DoubanHot`        | 电影首页热门影视词                  |
+| 优酷         | `YoukuHot`         | 热门搜索词                          |
+| 红果短剧     | `NovelQuickAppHot` | 首页热门短剧词                      |
 
 ## Usage
 
