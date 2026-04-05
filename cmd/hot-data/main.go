@@ -95,6 +95,7 @@ func defaultSources() []sourceConfig {
 		{name: "quark", fetcher: hotspider.NewQuarkHot()},
 		{name: "douban", fetcher: hotspider.NewDoubanHot()},
 		{name: "youku", fetcher: hotspider.NewYoukuHot()},
+		{name: "novelquickapp", fetcher: hotspider.NewNovelQuickAppHot()},
 	}
 }
 

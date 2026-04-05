@@ -21,6 +21,7 @@ go get github.com/Xwudao/go-hot-spider
 | 夸克搜索     | `QuarkSearch`     | 网盘搜索结果文本                    |
 | 豆瓣         | `DoubanHot`       | 电影首页热门影视词                  |
 | 优酷         | `YoukuHot`        | 热门搜索词                          |
+| 红果短剧     | `NovelQuickAppHot` | 首页热门短剧词                    |
 
 ## Usage
 
@@ -106,6 +107,14 @@ func main() {
     }
     fmt.Println("优酷热搜:", words)
 
+    // 红果短剧热搜
+    hg := hotspider.NewNovelQuickAppHot()
+    words, err = hg.Televisions()
+    if err != nil {
+        panic(err)
+    }
+    fmt.Println("红果短剧热搜:", words)
+
     // 百度搜索建议
     bs := hotspider.NewBaiduSuggestion()
     suggestions, err := bs.GetSuggestion("三体")
@@ -156,6 +165,7 @@ Flags:
 | 夸克视频 | `电影`, `电视剧`, `综艺`, `动漫` |
 | 豆瓣     | `电影`                           |
 | 优酷     | 暂不支持稳定类目接口             |
+| 红果短剧 | 暂不支持稳定类目接口             |
 
 ## Types
 

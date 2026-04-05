@@ -34,6 +34,7 @@ func TestLiveTelevisions(t *testing.T) {
 		{name: "quark", fetcher: NewQuarkHot()},
 		{name: "douban", fetcher: NewDoubanHot()},
 		{name: "youku", fetcher: NewYoukuHot()},
+		{name: "novelquickapp", fetcher: NewNovelQuickAppHot()},
 	}
 
 	for _, tt := range tests {
@@ -145,6 +146,7 @@ func TestHotByCategoryUnsupported(t *testing.T) {
 	}{
 		{name: "qq-movie", fetcher: NewQQHot(), category: VideoCategoryMovie},
 		{name: "youku-teleplay", fetcher: NewYoukuHot(), category: VideoCategoryTeleplay},
+		{name: "novelquickapp-movie", fetcher: NewNovelQuickAppHot(), category: VideoCategoryMovie},
 		{name: "douban-variety", fetcher: NewDoubanHot(), category: VideoCategoryVariety},
 		{name: "baidu-animation", fetcher: NewBaiduHot(), category: VideoCategoryAnimation},
 	}
@@ -172,6 +174,7 @@ func TestSupportedCategories(t *testing.T) {
 		{name: "quark", fetcher: NewQuarkHot(), expected: []VideoCategory{VideoCategoryMovie, VideoCategoryTeleplay, VideoCategoryVariety, VideoCategoryAnimation}},
 		{name: "douban", fetcher: NewDoubanHot(), expected: []VideoCategory{VideoCategoryMovie}},
 		{name: "youku", fetcher: NewYoukuHot(), expected: nil},
+		{name: "novelquickapp", fetcher: NewNovelQuickAppHot(), expected: nil},
 	}
 
 	for _, tt := range tests {
