@@ -109,6 +109,10 @@ func TestHotByCategoryLive(t *testing.T) {
 		fetcher  categoryWordFetcher
 		category VideoCategory
 	}{
+		{name: "qq-movie", fetcher: NewQQHot(), category: VideoCategoryMovie},
+		{name: "qq-teleplay", fetcher: NewQQHot(), category: VideoCategoryTeleplay},
+		{name: "qq-variety", fetcher: NewQQHot(), category: VideoCategoryVariety},
+		{name: "qq-animation", fetcher: NewQQHot(), category: VideoCategoryAnimation},
 		{name: "baidu-movie", fetcher: NewBaiduHot(), category: VideoCategoryMovie},
 		{name: "baidu-teleplay", fetcher: NewBaiduHot(), category: VideoCategoryTeleplay},
 		{name: "iqiyi-movie", fetcher: NewIQiyiHot(), category: VideoCategoryMovie},
@@ -144,7 +148,6 @@ func TestHotByCategoryUnsupported(t *testing.T) {
 		fetcher  categoryWordFetcher
 		category VideoCategory
 	}{
-		{name: "qq-movie", fetcher: NewQQHot(), category: VideoCategoryMovie},
 		{name: "youku-teleplay", fetcher: NewYoukuHot(), category: VideoCategoryTeleplay},
 		{name: "novelquickapp-movie", fetcher: NewNovelQuickAppHot(), category: VideoCategoryMovie},
 		{name: "douban-variety", fetcher: NewDoubanHot(), category: VideoCategoryVariety},
@@ -170,7 +173,7 @@ func TestSupportedCategories(t *testing.T) {
 		{name: "baidu", fetcher: NewBaiduHot(), expected: []VideoCategory{VideoCategoryMovie, VideoCategoryTeleplay}},
 		{name: "iqiyi", fetcher: NewIQiyiHot(), expected: []VideoCategory{VideoCategoryMovie, VideoCategoryTeleplay, VideoCategoryVariety, VideoCategoryAnimation}},
 		{name: "mgtv", fetcher: NewMGTVHot(), expected: []VideoCategory{VideoCategoryMovie, VideoCategoryTeleplay, VideoCategoryVariety, VideoCategoryAnimation}},
-		{name: "qq", fetcher: NewQQHot(), expected: nil},
+		{name: "qq", fetcher: NewQQHot(), expected: []VideoCategory{VideoCategoryMovie, VideoCategoryTeleplay, VideoCategoryVariety, VideoCategoryAnimation}},
 		{name: "quark", fetcher: NewQuarkHot(), expected: []VideoCategory{VideoCategoryMovie, VideoCategoryTeleplay, VideoCategoryVariety, VideoCategoryAnimation}},
 		{name: "douban", fetcher: NewDoubanHot(), expected: []VideoCategory{VideoCategoryMovie}},
 		{name: "youku", fetcher: NewYoukuHot(), expected: nil},
