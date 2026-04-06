@@ -3,6 +3,7 @@ package hotspider
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 )
 
@@ -59,13 +60,7 @@ func normalizeVideoCategoryString(raw string) (VideoCategory, bool) {
 }
 
 func supportsVideoCategory(categories []VideoCategory, target VideoCategory) bool {
-	for _, category := range categories {
-		if category == target {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(categories, target)
 }
 
 func copyVideoCategories(categories []VideoCategory) []VideoCategory {
