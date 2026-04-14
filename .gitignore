@@ -17,6 +17,7 @@ h### Go template
 *.log
 exports/
 .playwright-mcp/
+.playwright-cli/
 main
 app-linux
 build

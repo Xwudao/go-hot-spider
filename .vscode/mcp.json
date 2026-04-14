@@ -1,11 +1,5 @@
 {
 	"servers": {
-		"playwright": {
-			"command": "pnpx",
-			"args": [
-				"@playwright/mcp@latest"
-			]
-		}
 	},
 	"inputs": []
 }
