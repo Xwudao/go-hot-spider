@@ -1,13 +1,11 @@
 package hotspider
 
 import (
-	"bytes"
 	"errors"
-	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
-	"github.com/PuerkitoBio/goquery"
 	"github.com/imroc/req/v3"
 )
 
@@ -16,11 +14,41 @@ type QQHot struct {
 	r *req.Client
 }
 
-type qqHotSection struct {
-	channel string
-}
+// qqHotRanksURL 是腾讯视频排行榜页面地址，仅用于设置 Referer。
+const qqHotRanksURL = "https://v.qq.com/ranks/pages/index.html?t=hotsearch"
 
-const qqHotRanksURL = "https://v.qq.com/biu/ranks/?t=hotsearch"
+// qqHotListAPI 是排行榜页面实际使用的热词接口。
+const qqHotListAPI = "https://pbaccess.video.qq.com/trpc.tencentvideohotlistdata.hotlistdata.DoSearchHotListHttp/getSearchHotListHttp"
+
+const (
+	qqHotAllChannel = ""
+	qqHotAllPageLen = 10
+	qqHotCatPageLen = 50
+)
+
+// qqHotResponse 是热词接口的响应结构。
+type qqHotResponse struct {
+	Data struct {
+		ErrCode int    `json:"ErrCode"`
+		ErrMsg  string `json:"ErrMsg"`
+		Results []struct {
+			ChannelID   string `json:"ChannelID"`
+			ChannelName string `json:"ChannelName"`
+			Result      struct {
+				TotalNum int `json:"TotalNum"`
+				ListInfo []struct {
+					Query       string `json:"Query"`
+					HotLevel    int64  `json:"HotLevel"`
+					Trend       int    `json:"Trend"`
+					ID          string `json:"ID"`
+					SecondTitle string `json:"SecondTitle"`
+					HzImgURL    string `json:"HzImgURL"`
+					VideoType   string `json:"VideoType"`
+				} `json:"ListInfo"`
+			} `json:"Result"`
+		} `json:"Results"`
+	} `json:"data"`
+}
 
 var qqSupportedCategories = []VideoCategory{
 	VideoCategoryMovie,
@@ -29,19 +57,11 @@ var qqSupportedCategories = []VideoCategory{
 	VideoCategoryAnimation,
 }
 
-var qqHotSections = map[VideoCategory]qqHotSection{
-	VideoCategoryMovie: {
-		channel: "1",
-	},
-	VideoCategoryTeleplay: {
-		channel: "2",
-	},
-	VideoCategoryVariety: {
-		channel: "10",
-	},
-	VideoCategoryAnimation: {
-		channel: "3",
-	},
+var qqHotSections = map[VideoCategory]string{
+	VideoCategoryMovie:     "1",
+	VideoCategoryTeleplay:  "2",
+	VideoCategoryVariety:   "10",
+	VideoCategoryAnimation: "3",
 }
 
 // NewQQHot 创建腾讯视频热门搜索词抓取器。
@@ -63,8 +83,8 @@ func (q *QQHot) HotByCategory(category VideoCategory) ([]string, error) {
 		return nil, unsupportedCategoryError("qq hot", category)
 	}
 
-	section := qqHotSections[normalized]
-	words, err := q.fetchWords(section.channel)
+	channel := qqHotSections[normalized]
+	words, err := q.fetchWords(channel, qqHotCatPageLen)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +117,7 @@ func (q *QQHot) Animations() ([]string, error) {
 
 // Televisions 返回腾讯视频热门搜索词。
 func (q *QQHot) Televisions() ([]string, error) {
-	words, err := q.fetchWords("0")
+	words, err := q.fetchWords(qqHotAllChannel, qqHotAllPageLen)
 	if err != nil {
 		return nil, err
 	}
@@ -108,62 +128,46 @@ func (q *QQHot) Televisions() ([]string, error) {
 	return words, nil
 }
 
-func (q *QQHot) fetchWords(channel string) ([]string, error) {
-	html, err := q.fetchPage(qqHotRanksURL)
+func (q *QQHot) fetchWords(channel string, pageSize int) ([]string, error) {
+	respModel, err := q.fetchResponse(channel, pageSize)
 	if err != nil {
 		return nil, err
 	}
 
-	doc, err := goquery.NewDocumentFromReader(bytes.NewReader([]byte(html)))
+	words := q.findWords(respModel, channel)
+	if len(words) == 0 && channel != qqHotAllChannel {
+		// 接口偶尔忽略 ChannelID，退化为取首个榜单项。
+		words = q.findWords(respModel, "")
+	}
+
+	return words, nil
+}
+
+func (q *QQHot) fetchResponse(channel string, pageSize int) (*qqHotResponse, error) {
+	query := map[string]string{
+		"ChannelID": channel,
+		"PageSize":  strconv.Itoa(pageSize),
+		"PageNum":   "0",
+		"SceneID":   "2",
+	}
+
+	var respModel qqHotResponse
+	resp, err := q.r.R().SetQueryParams(query).SetSuccessResult(&respModel).Get(qqHotListAPI)
 	if err != nil {
 		return nil, err
 	}
-
-	words := q.findWords(doc, channel)
-	if len(words) > 0 {
-		return words, nil
+	if !resp.IsSuccessState() || respModel.Data.ErrCode != 0 {
+		return nil, errors.New("qq hot fail")
 	}
 
-	return q.findWordsFromSelection(doc.Selection), nil
+	return &respModel, nil
 }
 
-func (q *QQHot) fetchPage(pageURL string) (string, error) {
-	resp, err := q.r.R().Get(pageURL)
-	if err != nil {
-		return "", err
-	}
-	if !resp.IsSuccessState() {
-		return "", errors.New("qq hot fail")
-	}
-
-	body, err := resp.ToString()
-	if err != nil {
-		return "", err
-	}
-
-	return body, nil
-}
-
-func (q *QQHot) findWords(doc *goquery.Document, channel string) []string {
+func (q *QQHot) findWords(respModel *qqHotResponse, channel string) []string {
 	words := make([]string, 0, 16)
-	target := strings.TrimSpace(channel)
-
-	doc.Find(".mod_rank_figure").EachWithBreak(func(_ int, section *goquery.Selection) bool {
-		href, ok := section.Find(".mod_rank_title .link_more").First().Attr("href")
-		if !ok || qqHotChannelFromHref(href) != target {
-			return true
-		}
-
-		words = q.findWordsFromSelection(section)
-		return false
-	})
-
-	return words
-}
-
-func (q *QQHot) findWordsFromSelection(selection *goquery.Selection) []string {
-	hotTitles := make([]string, 0, 16)
 	seen := make(map[string]struct{})
+
+	target := strings.TrimSpace(channel)
 
 	appendTitle := func(raw string) {
 		title := removeChars(strings.TrimSpace(raw))
@@ -175,69 +179,18 @@ func (q *QQHot) findWordsFromSelection(selection *goquery.Selection) []string {
 		}
 
 		seen[title] = struct{}{}
-		hotTitles = append(hotTitles, title)
+		words = append(words, title)
 	}
 
-	selection.Find(".mod_rank_search_list .hotlist a").Each(func(_ int, item *goquery.Selection) {
-		appendTitle(qqHotWord(item))
-	})
+	for _, result := range respModel.Data.Results {
+		if target != "" && strings.TrimSpace(result.ChannelID) != target {
+			continue
+		}
 
-	return hotTitles
-}
-
-func qqHotWord(selection *goquery.Selection) string {
-	if href, ok := selection.Attr("href"); ok {
-		if title := qqHotWordFromHref(href); title != "" {
-			return title
+		for _, item := range result.Result.ListInfo {
+			appendTitle(item.Query)
 		}
 	}
 
-	if title, ok := selection.Attr("title"); ok {
-		if trimmed := strings.TrimSpace(title); trimmed != "" {
-			return trimmed
-		}
-	}
-
-	if text := strings.TrimSpace(selection.Find(".name").First().Text()); text != "" {
-		return text
-	}
-
-	return strings.TrimSpace(selection.Text())
-}
-
-func qqHotWordFromHref(rawURL string) string {
-	href := strings.TrimSpace(rawURL)
-	if href == "" {
-		return ""
-	}
-	if strings.HasPrefix(href, "//") {
-		href = "https:" + href
-	}
-
-	parsed, err := url.Parse(href)
-	if err != nil {
-		return ""
-	}
-
-	query := parsed.Query()
-	return strings.TrimSpace(query.Get("q"))
-}
-
-func qqHotChannelFromHref(rawURL string) string {
-	href := strings.TrimSpace(rawURL)
-	if href == "" {
-		return ""
-	}
-	if strings.HasPrefix(href, "//") {
-		href = "https:" + href
-	} else if strings.HasPrefix(href, "/") {
-		href = "https://v.qq.com" + href
-	}
-
-	parsed, err := url.Parse(href)
-	if err != nil {
-		return ""
-	}
-
-	return strings.TrimSpace(parsed.Query().Get("channel"))
+	return words
 }

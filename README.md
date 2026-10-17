@@ -16,12 +16,19 @@ go get github.com/Xwudao/go-hot-spider
 | 百度搜索建议 | `BaiduSuggestion`  | 搜索词联想建议                      |
 | 爱奇艺       | `IQiyiHot`         | 热门搜索词（电影/电视剧/综艺/动漫） |
 | 芒果TV       | `MGTVHot`          | 热门搜索词                          |
-| 腾讯视频     | `QQHot`            | 热门搜索词                          |
+| 腾讯视频     | `QQHot`            | 热门搜索词（排行榜 JSON 接口）      |
 | 夸克视频     | `QuarkHot`         | 影视排行榜热词                      |
 | 夸克搜索     | `QuarkSearch`      | 网盘搜索结果文本                    |
 | 豆瓣         | `DoubanHot`        | 电影首页热门影视词                  |
 | 优酷         | `YoukuHot`         | 热门搜索词                          |
 | 红果短剧     | `NovelQuickAppHot` | 首页热门短剧词                      |
+
+### Data Sources
+
+- 腾讯视频 (`QQHot`)：腾讯视频排行榜页面已改为前端渲染，因此改为直接调用页面使用的 JSON 接口
+  `https://pbaccess.video.qq.com/trpc.tencentvideohotlistdata.hotlistdata.DoSearchHotListHttp/getSearchHotListHttp`，
+  通过 `ChannelID` 区分频道（`1` 电影、`2` 电视剧、`10` 综艺、`3` 动漫）。页面地址若再次调整只需更新 `qq_hot.go` 中的常量。
+
 
 ## Usage
 
