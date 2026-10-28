@@ -2,6 +2,7 @@ package hotspider
 
 import (
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/imroc/req/v3"
@@ -109,6 +110,11 @@ func (q *QuarkHot) fetchChannel(channel string) ([]string, error) {
 	hotTitles := make([]string, 0, len(respModel.Data.Hits.Hit.Item))
 	seen := make(map[string]struct{}, len(respModel.Data.Hits.Hit.Item))
 	for _, item := range respModel.Data.Hits.Hit.Item {
+		// category 含“短片”的多为微短剧/动态漫，如“糯糯下山，师兄们都慌了”。
+		if strings.Contains(item.Category, "短片") || isNoiseTitle(item.Title) {
+			continue
+		}
+
 		title := removeChars(item.Title)
 		if title == "" {
 			continue

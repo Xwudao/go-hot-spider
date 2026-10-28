@@ -170,6 +170,10 @@ func (q *QQHot) findWords(respModel *qqHotResponse, channel string) []string {
 	target := strings.TrimSpace(channel)
 
 	appendTitle := func(raw string) {
+		if isNoiseTitle(raw) {
+			return
+		}
+
 		title := removeChars(strings.TrimSpace(raw))
 		if title == "" {
 			return

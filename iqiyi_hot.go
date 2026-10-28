@@ -128,7 +128,7 @@ func (i *IQiyiHot) findWords(respModel *iQiyiHotResponse) []string {
 	groups := make(map[string][]iQiyiHotItem, len(respModel.HotQuery))
 
 	appendItem := func(item iQiyiHotItem) {
-		if item.QipuID <= 0 || !i.supportsCategory(i.categoryOf(item.Tag)) {
+		if item.QipuID <= 0 || !i.supportsCategory(i.categoryOf(item.Tag)) || isNoiseTitle(item.Title) {
 			return
 		}
 
@@ -182,7 +182,7 @@ func (i *IQiyiHot) findWordsByGroup(respModel *iQiyiHotResponse, groupTitle stri
 		}
 
 		for _, item := range group.Items {
-			if item.QipuID <= 0 {
+			if item.QipuID <= 0 || isNoiseTitle(item.Title) {
 				continue
 			}
 

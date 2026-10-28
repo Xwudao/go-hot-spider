@@ -28,6 +28,30 @@ go get github.com/Xwudao/go-hot-spider
 - 腾讯视频 (`QQHot`)：腾讯视频排行榜页面已改为前端渲染，因此改为直接调用页面使用的 JSON 接口
   `https://pbaccess.video.qq.com/trpc.tencentvideohotlistdata.hotlistdata.DoSearchHotListHttp/getSearchHotListHttp`，
   通过 `ChannelID` 区分频道（`1` 电影、`2` 电视剧、`10` 综艺、`3` 动漫）。页面地址若再次调整只需更新 `qq_hot.go` 中的常量。
+- 优酷 (`YoukuHot`)：只解析 `mtop.youku.soku.yksearch` 返回的 `tabDataMap` 热搜榜（电影/电视剧/综艺/动漫），
+  跳过 少儿/人文/纪录片/微短剧 榜单；不再使用个性化推荐接口（混有人名、儿歌等）。请求中 `utdId` 必须为字符串，为 `null` 时不返回榜单。
+
+### 非影视词过滤
+
+为避免把短剧、网文式标题、儿歌等当作侵权词，抓取时会过滤：
+
+- 平台字段：夸克 `category` 含“短片”、优酷 `videoInfo` 非影视类目或无搜索指数、爱奇艺仅取影视分组。
+- 通用规则 `NoiseFilter`（作用于腾讯/爱奇艺/芒果/夸克/优酷），默认：含 儿歌/动态漫/漫剧/短剧；
+  含逗号且 ≥11 字；含“我/你”且 ≥12 字（如“身为魔王的我娶了精灵为妻该如何表白我的爱”）。
+
+规则可通过 `SetNoiseFilter` 全局替换，对之后的所有抓取生效：
+
+```go
+filter := hotspider.DefaultNoiseFilter()
+filter.Keywords = append(filter.Keywords, "合集", "解说")
+filter.PronounTitleMinLen = 0 // <=0 关闭该条规则
+filter.Custom = func(title string) bool {
+    return strings.HasSuffix(title, "中配版")
+}
+hotspider.SetNoiseFilter(filter)
+
+hotspider.SetNoiseFilter(nil) // 关闭通用规则过滤（平台字段过滤仍生效）
+```
 
 
 ## Usage

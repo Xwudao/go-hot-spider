@@ -120,6 +120,10 @@ func (m *MGTVHot) findWords(respModel *mgtvSuggestResponse) []string {
 	seen := make(map[string]struct{})
 
 	appendTitle := func(raw string) {
+		if isNoiseTitle(raw) {
+			return
+		}
+
 		title := removeChars(strings.TrimSpace(raw))
 		if title == "" {
 			return
